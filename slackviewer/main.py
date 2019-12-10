@@ -54,7 +54,7 @@ def configure_app(app, archive, channels, no_sidebar, no_external_references, de
               help="Runs in 'test' mode, i.e., this will do an archive extract, but will not start the server,"
                    " and immediately quit.")
 @click.option('--debug', is_flag=True, default=flag_ennvar("FLASK_DEBUG"))
-def main(port, archive, ip, no_browser, channels, no_sidebar, no_external_references, test, debug):
+def main(port, archive, ip, no_browser, channels, no_sidebar, no_external_references, test, debug):    
     if not archive:
         raise ValueError("Empty path provided for archive")
 

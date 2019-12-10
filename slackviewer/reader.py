@@ -149,11 +149,11 @@ class Reader(object):
             # gets path to dm directory that holds the json archive
 
             # daikichidaze: edit to parse "slack_dump" output file
-            # dir_path = os.path.join(self._PATH, '*', name)
-            dir_path = os.path.join(self._PATH, '*', name)
+            dir_path_sort = os.path.join(self._PATH, name)
+            dir_path_long = os.path.join(self._PATH, '*', name)
             messages = []
             # array of all days archived
-            day_files = glob.glob(os.path.join(dir_path, "*.json"))
+            day_files = glob.glob(os.path.join(dir_path_sort, "*.json")) + glob.glob(os.path.join(dir_path_long, "*.json"))
 
             # this is where it's skipping the empty directories
             if not day_files:
