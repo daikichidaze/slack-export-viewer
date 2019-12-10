@@ -147,7 +147,10 @@ class Reader(object):
         for name in names:
 
             # gets path to dm directory that holds the json archive
-            dir_path = os.path.join(self._PATH, name)
+
+            # daikichidaze: edit to parse "slack_dump" output file
+            # dir_path = os.path.join(self._PATH, '*', name)
+            dir_path = os.path.join(self._PATH, '*', name)
             messages = []
             # array of all days archived
             day_files = glob.glob(os.path.join(dir_path, "*.json"))
@@ -213,8 +216,11 @@ class Reader(object):
             for grouping in sorted_threads.items():
                 location = grouping[0] + 1
                 for reply in grouping[1]:
-                    if not reply._message["text"].startswith("**Thread Reply:**"):
-                        reply._message["text"] = "**Thread Reply:** {}".format(reply._message['text'])
+                    # daikichidaze: Add branch for non "text" key
+                    tmp_text = reply._message.get("text", "")
+
+                    if not tmp_text.startswith("**Thread Reply:**"):
+                        reply._message["text"] = "**Thread Reply:** {}".format(tmp_text)
                     channel_data[channel_name].insert(location, reply)
                     location += 1
         return channel_data
