@@ -43,7 +43,8 @@ class Reader(object):
             channels = channels.split(',')
 
         channel_data = self._read_from_json("channels.json")
-        channel_names = [c["name"] for c in channel_data.values() if not channels or c["name"] in channels]
+        channel_names = [c["name"] for c in channel_data.values(
+        ) if not channels or c["name"] in channels]
 
         return self._create_messages(channel_names, channel_data)
 
@@ -90,7 +91,8 @@ class Reader(object):
                         users = dm["members"]
                     if "user" in dm:
                         users = [dm["user"]]
-                    dm_members = {"id": dm["id"], "users": [self.__USER_DATA.setdefault(m, deleted_user(m)) for m in users]}
+                    dm_members = {"id": dm["id"], "users": [
+                        self.__USER_DATA.setdefault(m, deleted_user(m)) for m in users]}
                     all_dms_users.append(dm_members)
                 except KeyError:
                     dm_members = None
@@ -123,7 +125,8 @@ class Reader(object):
         all_mpim_users = []
 
         for mpim in mpims:
-            mpim_members = {"name": mpim["name"], "users": [] if "members" not in mpim.keys() else [self.__USER_DATA.setdefault(m, deleted_user(m)) for m in mpim["members"]]}
+            mpim_members = {"name": mpim["name"], "users": [] if "members" not in mpim.keys(
+            ) else [self.__USER_DATA.setdefault(m, deleted_user(m)) for m in mpim["members"]]}
             all_mpim_users.append(mpim_members)
 
         return all_mpim_users
@@ -170,7 +173,8 @@ class Reader(object):
             dir_path_long = os.path.join(self._PATH, '*', name)
             messages = []
             # array of all days archived
-            day_files = glob.glob(os.path.join(dir_path_sort, "*.json")) + glob.glob(os.path.join(dir_path_long, "*.json"))
+            day_files = glob.glob(os.path.join(
+                dir_path_sort, "*.json")) + glob.glob(os.path.join(dir_path_long, "*.json"))
 
             # this is where it's skipping the empty directories
             if not day_files:
@@ -181,12 +185,13 @@ class Reader(object):
             for day in sorted(day_files):
                 with io.open(os.path.join(self._PATH, day), encoding="utf8") as f:
                     # loads all messages
-                    day_messages = json.load(f)   
+                    day_messages = json.load(f)
 
                     # sorts the messages in the json file
-                    day_messages.sort(key=Reader._extract_time) 
-                 
-                    messages.extend([Message(formatter, d) for d in day_messages])
+                    day_messages.sort(key=Reader._extract_time)
+
+                    messages.extend([Message(formatter, d)
+                                    for d in day_messages])
 
             chats[name] = messages
         chats = self._build_threads(chats)
@@ -226,7 +231,7 @@ class Reader(object):
                 if 'reply_count' in message._message or 'replies' in message._message:
                     #   Identify and save where we are
                     reply_list = []
-                    for reply in message._message['replies']:
+                    for reply in message._message.get('replies', []):
                         reply_list.append(reply)
                     reply_objects = []
                     for item in reply_list:
@@ -238,10 +243,12 @@ class Reader(object):
                     if not reply_objects:
                         continue
 
-                    sorted_reply_objects = sorted(reply_objects, key=lambda tup: tup[0])
+                    sorted_reply_objects = sorted(
+                        reply_objects, key=lambda tup: tup[0])
                     for reply_obj_tuple in sorted_reply_objects:
                         items_to_remove.append(reply_obj_tuple[0])
-                    replies[location] = [tup[1] for tup in sorted_reply_objects]
+                    replies[location] = [tup[1]
+                                         for tup in sorted_reply_objects]
             # Create an OrderedDict of thread locations and replies in reverse numerical order
             sorted_threads = OrderedDict(sorted(replies.items(), reverse=True))
 
@@ -256,7 +263,8 @@ class Reader(object):
                     tmp_text = reply._message.get("text", "")
 
                     if not tmp_text.startswith("**Thread Reply:**"):
-                        reply._message["text"] = "**Thread Reply:** {}".format(tmp_text)
+                        reply._message["text"] = "**Thread Reply:** {}".format(
+                            tmp_text)
                     channel_data[channel_name].insert(location, reply)
                     location += 1
         return channel_data
