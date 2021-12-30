@@ -7,7 +7,7 @@ import os
 
 from slackviewer.formatter import SlackFormatter
 from slackviewer.message import Message
-from slackviewer.user import User
+from slackviewer.user import User, deleted_user
 
 
 class Reader(object):
@@ -20,6 +20,19 @@ class Reader(object):
         # TODO: Make sure this works
         with io.open(os.path.join(self._PATH, "users.json"), encoding="utf8") as f:
             self.__USER_DATA = {u["id"]: User(u) for u in json.load(f)}
+            slackbot = {
+                "id": "USLACKBOT",
+                "name": "slackbot",
+                "profile": {
+                    "image_24": "https://a.slack-edge.com/0180/img/slackbot_24.png",
+                    "image_32": "https://a.slack-edge.com/2fac/plugins/slackbot/assets/service_32.png",
+                    "image_48": "https://a.slack-edge.com/2fac/plugins/slackbot/assets/service_48.png",
+                    "image_72": "https://a.slack-edge.com/0180/img/slackbot_72.png",
+                    "image_192": "https://a.slack-edge.com/66f9/img/slackbot_192.png",
+                    "image_512": "https://a.slack-edge.com/1801/img/slackbot_512.png",
+                }
+            }
+            self.__USER_DATA.setdefault("USLACKBOT", User(slackbot))
 
     ##################
     # Public Methods #
@@ -73,7 +86,11 @@ class Reader(object):
             if dm["id"] not in self._EMPTY_DMS:
                 # added try catch for users from shared workspaces not in current workspace
                 try:
-                    dm_members = {"id": dm["id"], "users": [self.__USER_DATA[m] for m in dm["members"]]}
+                    if "members" in dm:
+                        users = dm["members"]
+                    if "user" in dm:
+                        users = [dm["user"]]
+                    dm_members = {"id": dm["id"], "users": [self.__USER_DATA.setdefault(m, deleted_user(m)) for m in users]}
                     all_dms_users.append(dm_members)
                 except KeyError:
                     dm_members = None
@@ -106,7 +123,7 @@ class Reader(object):
         all_mpim_users = []
 
         for mpim in mpims:
-            mpim_members = {"name": mpim["name"], "users": [self.__USER_DATA[m] for m in mpim["members"]]}
+            mpim_members = {"name": mpim["name"], "users": [] if "members" not in mpim.keys() else [self.__USER_DATA.setdefault(m, deleted_user(m)) for m in mpim["members"]]}
             all_mpim_users.append(mpim_members)
 
         return all_mpim_users
@@ -189,28 +206,47 @@ class Reader(object):
         """
         for channel_name in channel_data.keys():
             replies = {}
-            for message in channel_data[channel_name]:
+
+            user_ts_lookup = {}
+            items_to_remove = []
+            for i, m in enumerate(channel_data[channel_name]):
+                user = m._message.get('user')
+                ts = m._message.get('ts')
+
+                if user is None or ts is None:
+                    continue
+
+                k = (user, ts)
+                if k not in user_ts_lookup:
+                    user_ts_lookup[k] = []
+                user_ts_lookup[k].append((i, m))
+
+            for location, message in enumerate(channel_data[channel_name]):
                 #   If there's a "reply_count" key, generate a list of user and timestamp dictionaries
-                if 'reply_count' in message._message.keys():
+                if 'reply_count' in message._message or 'replies' in message._message:
                     #   Identify and save where we are
-                    location = channel_data[channel_name].index(message)
                     reply_list = []
                     for reply in message._message['replies']:
                         reply_list.append(reply)
                     reply_objects = []
                     for item in reply_list:
-                        for answer in channel_data[channel_name]:
-                            if "user" in answer._message:
-                                if answer._message['user'] == item['user'] \
-                                        and answer._message['ts'] == item['ts']:
-                                    reply_location = channel_data[channel_name].index(answer)
-                                    # Mutate the original dictionary. We're going to put the thread replies after
-                                    # the original message.
-                                    thread_message = channel_data[channel_name].pop(reply_location)
-                                    reply_objects.append(thread_message)
-                    replies[location] = reply_objects
+                        item_lookup_key = (item['user'], item['ts'])
+                        item_replies = user_ts_lookup.get(item_lookup_key)
+                        if item_replies is not None:
+                            reply_objects.extend(item_replies)
+
+                    if not reply_objects:
+                        continue
+
+                    sorted_reply_objects = sorted(reply_objects, key=lambda tup: tup[0])
+                    for reply_obj_tuple in sorted_reply_objects:
+                        items_to_remove.append(reply_obj_tuple[0])
+                    replies[location] = [tup[1] for tup in sorted_reply_objects]
             # Create an OrderedDict of thread locations and replies in reverse numerical order
             sorted_threads = OrderedDict(sorted(replies.items(), reverse=True))
+
+            for idx_to_remove in sorted(items_to_remove, reverse=True):
+                del channel_data[channel_name][idx_to_remove]
 
             # Iterate through the threads and insert them back into channel_data[channel_name] in response order
             for grouping in sorted_threads.items():
