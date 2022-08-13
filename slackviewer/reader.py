@@ -253,20 +253,33 @@ class Reader(object):
             sorted_threads = OrderedDict(sorted(replies.items(), reverse=True))
 
             for idx_to_remove in sorted(items_to_remove, reverse=True):
-                del channel_data[channel_name][idx_to_remove]
+                # threads location hotfix
+                channel_data[channel_name][idx_to_remove] = {'user': -1}
 
             # Iterate through the threads and insert them back into channel_data[channel_name] in response order
             for grouping in sorted_threads.items():
                 location = grouping[0] + 1
                 for reply in grouping[1]:
+<<<<<<< HEAD
                     # daikichidaze: Add branch for non "text" key
                     tmp_text = reply._message.get("text", "")
 
                     if not tmp_text.startswith("**Thread Reply:**"):
                         reply._message["text"] = "**Thread Reply:** {}".format(
                             tmp_text)
+=======
+                    msgtext = reply._message.get("text")
+                    if not msgtext or not msgtext.startswith("**Thread Reply:**"):
+                        reply._message["text"] = "**Thread Reply:** {}".format(msgtext)
+>>>>>>> 3ccc6b31714fc72a03962dc52a8a07303203171b
                     channel_data[channel_name].insert(location, reply)
                     location += 1
+            # threads location hotfix
+            data_with_sorted_threads = []
+            for i, item in enumerate(channel_data[channel_name]):
+                if isinstance(item, Message):
+                    data_with_sorted_threads.append(item)
+            channel_data[channel_name] = data_with_sorted_threads.copy()
         return channel_data
 
     def _read_from_json(self, file):
