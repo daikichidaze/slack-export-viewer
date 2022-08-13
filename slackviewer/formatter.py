@@ -13,12 +13,14 @@ if sys.version_info[0] == 2:
     reload(sys)
     sys.setdefaultencoding('utf8')
 
+
 class SlackFormatter(object):
     "This formats messages and provides access to workspace-wide data (user and channel metadata)."
 
     # Class-level constants for precompilation of frequently-reused regular expressions
     # URL detection relies on http://stackoverflow.com/a/1547940/1798683
-    _LINK_PAT = re.compile(r"<(https|http|mailto):[A-Za-z0-9_\.\-\/\?\,\=\#\:\@]+\|[^>]+>")
+    _LINK_PAT = re.compile(
+        r"<(https|http|mailto):[A-Za-z0-9_\.\-\/\?\,\=\#\:\@]+\|[^>]+>")
     _MENTION_PAT = re.compile(r"<((?:#C|@[UB])\w+)(?:\|([A-Za-z0-9.-_]+))?>")
     _HASHTAG_PAT = re.compile(r"(^| )#[A-Za-z][\w\.\-\_]+( |$)")
 
@@ -31,7 +33,8 @@ class SlackFormatter(object):
             bot_id = message["bot_id"]
             logging.debug("bot addition for %s", bot_id)
             if "bot_link" in message:
-                (bot_url, bot_name) = message["bot_link"].strip("<>").split("|", 1)
+                (bot_url, bot_name) = message["bot_link"].strip(
+                    "<>").split("|", 1)
             elif "username" in message:
                 bot_name = message["username"]
                 bot_url = None
@@ -68,7 +71,7 @@ class SlackFormatter(object):
 
         # Introduce unicode emoji
         message = self.slack_to_accepted_emoji(message)
-        message = emoji.emojize(message, language='alias')
+        message = emoji.emojize(message, use_aliases=True)
 
         if process_markdown:
             # Handle bold (convert * * to ** **)
@@ -96,7 +99,8 @@ class SlackFormatter(object):
         # For example, Slack's ":woman-shrugging:" is converted to ":woman_shrugging:"
         message = re.sub(
             r":([^ <>/:])([^ <>/:]+):",
-            lambda x: ":{}{}:".format(x.group(1), x.group(2).replace("-", "_")),
+            lambda x: ":{}{}:".format(
+                x.group(1), x.group(2).replace("-", "_")),
             message
         )
 
@@ -105,7 +109,8 @@ class SlackFormatter(object):
         return message
 
     def _sub_annotated_mention(self, matchobj):
-        ref_id = matchobj.group(1)[1:]  # drop #/@ from the start, we don't care
+        # drop #/@ from the start, we don't care
+        ref_id = matchobj.group(1)[1:]
         annotation = matchobj.group(2)
         if ref_id.startswith('C'):
             mention_format = "<b>#{}</b>"
