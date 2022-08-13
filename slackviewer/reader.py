@@ -260,18 +260,10 @@ class Reader(object):
             for grouping in sorted_threads.items():
                 location = grouping[0] + 1
                 for reply in grouping[1]:
-<<<<<<< HEAD
-                    # daikichidaze: Add branch for non "text" key
-                    tmp_text = reply._message.get("text", "")
-
-                    if not tmp_text.startswith("**Thread Reply:**"):
-                        reply._message["text"] = "**Thread Reply:** {}".format(
-                            tmp_text)
-=======
                     msgtext = reply._message.get("text")
                     if not msgtext or not msgtext.startswith("**Thread Reply:**"):
-                        reply._message["text"] = "**Thread Reply:** {}".format(msgtext)
->>>>>>> 3ccc6b31714fc72a03962dc52a8a07303203171b
+                        reply._message["text"] = "**Thread Reply:** {}".format(
+                            msgtext)
                     channel_data[channel_name].insert(location, reply)
                     location += 1
             # threads location hotfix
